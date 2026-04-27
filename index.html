@@ -13,9 +13,15 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    flex-direction: column;
 }
 
-/* Container */
+.wrapper{
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+}
+
 .calculator {
     background: #111;
     padding: 20px;
@@ -23,15 +29,51 @@ body {
     box-shadow: 0 0 30px #00f7ff;
 }
 
-/* Title */
+.preview {
+    width:220px;
+    background:#111;
+    padding:15px;
+    border-radius:20px;
+    box-shadow:0 0 20px #ff00ff;
+    color:white;
+}
+
+.preview h3{
+    color:#ff00ff;
+    margin-bottom:10px;
+}
+
+.preview-box{
+    background:#000;
+    padding:10px;
+    border-radius:10px;
+    min-height:50px;
+    color:#00f7ff;
+    box-shadow: inset 0 0 10px #00f7ff;
+}
+
+.history-list{
+    margin-top:10px;
+    font-size:12px;
+    max-height:200px;
+    overflow:auto;
+}
+
 h1 {
     color: #00f7ff;
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-shadow: 0 0 10px #00f7ff;
 }
 
-/* Display */
+#history {
+    color: #888;
+    font-size: 14px;
+    min-height: 20px;
+    text-align: right;
+    margin-bottom: 5px;
+}
+
 #display {
     width: 100%;
     height: 60px;
@@ -47,14 +89,12 @@ h1 {
     box-shadow: inset 0 0 10px #00f7ff;
 }
 
-/* Buttons Grid */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 70px);
     gap: 10px;
 }
 
-/* Neon Button */
 button {
     height: 60px;
     border: none;
@@ -63,86 +103,149 @@ button {
     color: white;
     background: #111;
     cursor: pointer;
-    position: relative;
     transition: 0.2s;
     box-shadow: 0 0 5px #00f7ff, 0 0 10px #00f7ff;
 }
 
-/* Hover Effect */
 button:hover {
     transform: scale(1.1);
-    box-shadow: 0 0 20px #00f7ff, 0 0 40px #00f7ff;
 }
 
-/* Click Effect (3D press) */
 button:active {
     transform: scale(0.95);
-    box-shadow: inset 0 0 10px #00f7ff;
 }
 
-/* Special buttons */
 .equal {
     background: #00f7ff;
     color: black;
-    box-shadow: 0 0 20px #00f7ff;
 }
 
 .clear {
     background: red;
+}
+
+.extra {
+    background: #222;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:10px;
+}
+
+.copy{
+    background:#ff00ff;
+    color:white;
+    padding:5px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:12px;
 }
 </style>
 </head>
 
 <body>
 
+<div class="wrapper">
+
 <div class="calculator">
     <h1>Calculate with Irtza</h1>
-
-    <input type="text" id="display" disabled>
+    <div id="history"></div>
+    <input type="text" id="display" oninput="livePreview()" disabled>
 
     <div class="buttons">
         <button onclick="clearDisplay()" class="clear">C</button>
+        <button onclick="backspace()">⌫</button>
+        <button onclick="append('%')">%</button>
         <button onclick="append('/')">/</button>
-        <button onclick="append('*')">*</button>
-        <button onclick="append('-')">-</button>
 
         <button onclick="append('7')">7</button>
         <button onclick="append('8')">8</button>
         <button onclick="append('9')">9</button>
-        <button onclick="append('+')">+</button>
+        <button onclick="append('*')">*</button>
 
         <button onclick="append('4')">4</button>
         <button onclick="append('5')">5</button>
         <button onclick="append('6')">6</button>
-        <button onclick="calculate()" class="equal">=</button>
+        <button onclick="append('-')">-</button>
 
         <button onclick="append('1')">1</button>
         <button onclick="append('2')">2</button>
         <button onclick="append('3')">3</button>
-        <button onclick="append('.')">.</button>
+        <button onclick="append('+')">+</button>
 
-        <button onclick="append('0')" style="grid-column: span 4;">0</button>
+        <button onclick="append('0')" class="extra">0</button>
+        <button onclick="append('.')">.</button>
+        <button onclick="append('(')">(</button>
+        <button onclick="append(')')">)</button>
+
+        <button onclick="calculate()" class="equal" style="grid-column: span 4;">=</button>
     </div>
+</div>
+
+<div class="preview">
+    <h3>Live Preview</h3>
+    <div class="preview-box" id="previewBox">0</div>
+    <div class="topbar">
+        <span>History</span>
+        <span class="copy" onclick="copyResult()">Copy</span>
+    </div>
+    <div class="history-list" id="historyList"></div>
+</div>
+
 </div>
 
 <script>
 let display = document.getElementById("display");
+let history = document.getElementById("history");
+let previewBox = document.getElementById("previewBox");
+let historyList = document.getElementById("historyList");
 
 function append(value) {
     display.value += value;
+    livePreview();
 }
 
 function clearDisplay() {
     display.value = "";
+    previewBox.innerText = "0";
+}
+
+function backspace() {
+    display.value = display.value.slice(0, -1);
+    livePreview();
+}
+
+function livePreview(){
+    try{
+        previewBox.innerText = display.value ? eval(display.value) : 0;
+    }catch{
+        previewBox.innerText = "Error";
+    }
 }
 
 function calculate() {
     try {
-        display.value = eval(display.value);
+        let result = eval(display.value);
+        history.innerText = display.value + " =";
+        display.value = result;
+
+        let item = document.createElement("div");
+        item.innerText = history.innerText + " " + result;
+        historyList.prepend(item);
+
+        previewBox.innerText = result;
     } catch {
         display.value = "Error";
     }
 }
+
+function copyResult(){
+    navigator.clipboard.writeText(display.value);
+    alert("Copied: " + display.value);
+}
+
 </script>
 
 </body>
